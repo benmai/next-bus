@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="refresh" content="60">
+  <title>Next Bus</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div id="app">
+    <header>
+      <div class="header-left">
+        <h1>Next Bus</h1>
+        <div id="weather" class="weather"></div>
+      </div>
+      <a href="/settings.html" class="settings-btn" aria-label="Settings">Settings</a>
+    </header>
+
+    <div id="greeting" class="greeting"></div>
+
+    <main id="stops-container">
+      <p class="no-stops">No stops configured. <a href="/settings.html">Add stops</a></p>
+    </main>
+
+    <footer>
+      <span id="last-updated">--</span>
+    </footer>
+  </div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>

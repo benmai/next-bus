@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings - Next Bus</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .stop-search {
+      margin-top: 16px;
+      display: none;
+    }
+    .stop-search.visible {
+      display: block;
+    }
+    .stop-results {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 2px solid #000;
+      margin-top: 8px;
+    }
+    .stop-results .stop-option {
+      padding: 12px;
+      border-bottom: 1px solid #ccc;
+      cursor: pointer;
+    }
+    .stop-results .stop-option:last-child {
+      border-bottom: none;
+    }
+    .stop-results .stop-option:hover,
+    .stop-results .stop-option:focus {
+      background: #eee;
+    }
+    .stop-results .stop-option.selected {
+      background: #000;
+      color: #fff;
+    }
+    .loading {
+      padding: 12px;
+      text-align: center;
+      font-style: italic;
+    }
+    .selected-stop {
+      margin-top: 16px;
+      padding: 12px;
+      border: 2px solid #000;
+      background: #f5f5f5;
+      display: none;
+    }
+    .selected-stop.visible {
+      display: block;
+    }
+    .selected-stop-name {
+      font-weight: bold;
+      font-size: 18px;
+    }
+    .selected-stop-id {
+      color: #666;
+      font-size: 14px;
+    }
+    #search-input {
+      margin-bottom: 0;
+    }
+    .no-results {
+      padding: 12px;
+      text-align: center;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <a href="/" class="back-link">&larr; Back to display</a>
+
+    <header>
+      <h1>Settings</h1>
+    </header>
+
+    <main>
+      <section class="settings-form">
+        <h2>Add Stop</h2>
+        <form id="add-stop-form">
+          <div class="form-group">
+            <label for="agency">Transit Agency</label>
+            <select id="agency" name="agency" required>
+              <option value="">Select agency...</option>
+              <option value="AC">AC Transit</option>
+              <option value="SF">SF Muni</option>
+              <option value="BA">BART</option>
+              <option value="CT">Caltrain</option>
+              <option value="GG">Golden Gate Transit</option>
+              <option value="SM">SamTrans</option>
+              <option value="VTA">VTA</option>
+              <option value="CC">County Connection</option>
+              <option value="EM">Emery Go-Round</option>
+              <option value="WC">WestCAT</option>
+            </select>
+          </div>
+
+          <div id="stop-search" class="stop-search">
+            <div class="form-group">
+              <label for="search-input">Search for stop</label>
+              <input type="text" id="search-input" placeholder="Type to search stops...">
+            </div>
+            <div id="stop-results" class="stop-results">
+              <div class="loading">Loading stops...</div>
+            </div>
+          </div>
+
+          <div id="selected-stop" class="selected-stop">
+            <div class="selected-stop-name" id="selected-stop-name"></div>
+            <div class="selected-stop-id" id="selected-stop-id"></div>
+          </div>
+
+          <div class="form-group" style="margin-top: 16px;">
+            <label for="name">Display Name (optional)</label>
+            <input type="text" id="name" name="name" placeholder="e.g. Home - Northbound">
+          </div>
+
+          <button type="submit" id="submit-btn" disabled>Select a stop first</button>
+        </form>
+      </section>
+
+      <section>
+        <h2>Your Stops</h2>
+        <ul id="stop-list" class="stop-list">
+          <li>No stops configured</li>
+        </ul>
+      </section>
+
+      <section class="settings-form" style="margin-top: 32px;">
+        <h2>Weather Location</h2>
+        <p style="margin-bottom: 12px; color: #666;">Set your location to show weather on the display.</p>
+        <div id="location-status" style="margin-bottom: 12px;"></div>
+        <div class="form-group">
+          <button type="button" id="detect-location-btn" style="margin-right: 8px;">Detect My Location</button>
+        </div>
+        <div class="form-group">
+          <label for="lat">Latitude</label>
+          <input type="text" id="lat" placeholder="e.g. 37.7749">
+        </div>
+        <div class="form-group">
+          <label for="lon">Longitude</label>
+          <input type="text" id="lon" placeholder="e.g. -122.4194">
+        </div>
+        <button type="button" id="save-location-btn">Save Location</button>
+        <button type="button" id="clear-location-btn" style="background: #fff; color: #000; border: 2px solid #000; margin-left: 8px;">Clear</button>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (function() {
+      'use strict';
+
+      var STORAGE_KEY = 'nextbus_stops';
+      var allStops = [];
+      var selectedStop = null;
+
+      function getStops() {
+        try {
+          var stored = localStorage.getItem(STORAGE_KEY);
+          return stored ? JSON.parse(stored) : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function saveStops(stops) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(stops));
+      }
+
+      function renderStops() {
+        var stops = getStops();
+        var list = document.getElementById('stop-list');
+
+        if (stops.length === 0) {
+          list.innerHTML = '<li>No stops configured</li>';
+          return;
+        }
+
+        var html = '';
+        for (var i = 0; i < stops.length; i++) {
+          var stop = stops[i];
+          var displayName = stop.name || (stop.agency + ' - ' + stop.stopCode);
+          html += '<li>';
+          html += '<span>' + escapeHtml(displayName) + '</span>';
+          html += '<button class="remove-btn" data-index="' + i + '">Remove</button>';
+          html += '</li>';
+        }
+        list.innerHTML = html;
+
+        var buttons = list.querySelectorAll('.remove-btn');
+        for (var j = 0; j < buttons.length; j++) {
+          buttons[j].addEventListener('click', function(e) {
+            var index = parseInt(e.target.getAttribute('data-index'), 10);
+            removeStop(index);
+          });
+        }
+      }
+
+      function addStop(agency, stopCode, name) {
+        var stops = getStops();
+        stops.push({
+          agency: agency,
+          stopCode: stopCode,
+          name: name || ''
+        });
+        saveStops(stops);
+        renderStops();
+      }
+
+      function removeStop(index) {
+        var stops = getStops();
+        stops.splice(index, 1);
+        saveStops(stops);
+        renderStops();
+      }
+
+      function escapeHtml(text) {
+        if (!text) return '';
+        var div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      // Load stops for agency
+      function loadStops(agency) {
+        var resultsDiv = document.getElementById('stop-results');
+        resultsDiv.innerHTML = '<div class="loading">Loading stops...</div>';
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', '/api/stops?agency=' + encodeURIComponent(agency), true);
+        xhr.onreadystatechange = function() {
+          if (xhr.readyState === 4) {
+            if (xhr.status === 200) {
+              try {
+                allStops = JSON.parse(xhr.responseText);
+                filterStops('');
+              } catch (e) {
+                resultsDiv.innerHTML = '<div class="no-results">Error loading stops</div>';
+              }
+            } else {
+              resultsDiv.innerHTML = '<div class="no-results">Error loading stops</div>';
+            }
+          }
+        };
+        xhr.send();
+      }
+
+      // Filter and display stops
+      function filterStops(query) {
+        var resultsDiv = document.getElementById('stop-results');
+        var lowerQuery = query.toLowerCase();
+
+        var filtered = allStops.filter(function(stop) {
+          if (!query) return true;
+          return stop.name.toLowerCase().indexOf(lowerQuery) !== -1 ||
+                 stop.id.toLowerCase().indexOf(lowerQuery) !== -1;
+        });
+
+        if (filtered.length === 0) {
+          resultsDiv.innerHTML = '<div class="no-results">No stops found</div>';
+          return;
+        }
+
+        // Limit to 50 results for performance
+        var limited = filtered.slice(0, 50);
+
+        var html = '';
+        for (var i = 0; i < limited.length; i++) {
+          var stop = limited[i];
+          var isSelected = selectedStop && selectedStop.id === stop.id;
+          html += '<div class="stop-option' + (isSelected ? ' selected' : '') + '" data-id="' + escapeHtml(stop.id) + '" data-name="' + escapeHtml(stop.name) + '">';
+          html += escapeHtml(stop.name);
+          html += '</div>';
+        }
+
+        if (filtered.length > 50) {
+          html += '<div class="no-results">Showing 50 of ' + filtered.length + ' results. Type more to filter.</div>';
+        }
+
+        resultsDiv.innerHTML = html;
+
+        // Add click handlers
+        var options = resultsDiv.querySelectorAll('.stop-option');
+        for (var j = 0; j < options.length; j++) {
+          options[j].addEventListener('click', function(e) {
+            selectStop(e.target.getAttribute('data-id'), e.target.getAttribute('data-name'));
+          });
+        }
+      }
+
+      // Select a stop
+      function selectStop(id, name) {
+        selectedStop = { id: id, name: name };
+
+        document.getElementById('selected-stop').classList.add('visible');
+        document.getElementById('selected-stop-name').textContent = name;
+        document.getElementById('selected-stop-id').textContent = 'Stop ID: ' + id;
+
+        // Pre-fill display name
+        var nameInput = document.getElementById('name');
+        if (!nameInput.value) {
+          nameInput.value = name;
+        }
+
+        // Enable submit
+        var submitBtn = document.getElementById('submit-btn');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Add Stop';
+
+        // Update visual selection
+        var options = document.querySelectorAll('.stop-option');
+        for (var i = 0; i < options.length; i++) {
+          if (options[i].getAttribute('data-id') === id) {
+            options[i].classList.add('selected');
+          } else {
+            options[i].classList.remove('selected');
+          }
+        }
+      }
+
+      // Agency change handler
+      var agencySelect = document.getElementById('agency');
+      agencySelect.addEventListener('change', function() {
+        var agency = agencySelect.value;
+        var stopSearch = document.getElementById('stop-search');
+
+        // Reset state
+        selectedStop = null;
+        allStops = [];
+        document.getElementById('selected-stop').classList.remove('visible');
+        document.getElementById('search-input').value = '';
+        document.getElementById('submit-btn').disabled = true;
+        document.getElementById('submit-btn').textContent = 'Select a stop first';
+
+        if (agency) {
+          stopSearch.classList.add('visible');
+          loadStops(agency);
+        } else {
+          stopSearch.classList.remove('visible');
+        }
+      });
+
+      // Search input handler
+      var searchInput = document.getElementById('search-input');
+      searchInput.addEventListener('input', function() {
+        filterStops(searchInput.value);
+      });
+
+      // Form submit handler
+      var form = document.getElementById('add-stop-form');
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        var agency = document.getElementById('agency').value;
+        var name = document.getElementById('name').value.trim();
+
+        if (agency && selectedStop) {
+          addStop(agency, selectedStop.id, name);
+
+          // Reset form
+          form.reset();
+          selectedStop = null;
+          allStops = [];
+          document.getElementById('stop-search').classList.remove('visible');
+          document.getElementById('selected-stop').classList.remove('visible');
+          document.getElementById('submit-btn').disabled = true;
+          document.getElementById('submit-btn').textContent = 'Select a stop first';
+        }
+      });
+
+      // Initial render
+      renderStops();
+
+      // ===== Location/Weather Settings =====
+      var LOCATION_KEY = 'nextbus_location';
+
+      function getLocation() {
+        try {
+          var stored = localStorage.getItem(LOCATION_KEY);
+          return stored ? JSON.parse(stored) : null;
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function saveLocation(lat, lon) {
+        localStorage.setItem(LOCATION_KEY, JSON.stringify({ lat: lat, lon: lon }));
+      }
+
+      function clearLocation() {
+        localStorage.removeItem(LOCATION_KEY);
+      }
+
+      function renderLocation() {
+        var location = getLocation();
+        var statusEl = document.getElementById('location-status');
+        var latInput = document.getElementById('lat');
+        var lonInput = document.getElementById('lon');
+
+        if (location) {
+          statusEl.innerHTML = '<strong>Current:</strong> ' + location.lat + ', ' + location.lon;
+          latInput.value = location.lat;
+          lonInput.value = location.lon;
+        } else {
+          statusEl.innerHTML = '<em>No location set</em>';
+          latInput.value = '';
+          lonInput.value = '';
+        }
+      }
+
+      // Detect location button
+      document.getElementById('detect-location-btn').addEventListener('click', function() {
+        var statusEl = document.getElementById('location-status');
+        statusEl.innerHTML = '<em>Detecting location...</em>';
+
+        if (!navigator.geolocation) {
+          statusEl.innerHTML = '<strong>Error:</strong> Geolocation not supported';
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          function(position) {
+            var lat = position.coords.latitude.toFixed(4);
+            var lon = position.coords.longitude.toFixed(4);
+            document.getElementById('lat').value = lat;
+            document.getElementById('lon').value = lon;
+            statusEl.innerHTML = '<em>Location detected! Click Save to confirm.</em>';
+          },
+          function(error) {
+            statusEl.innerHTML = '<strong>Error:</strong> ' + error.message;
+          }
+        );
+      });
+
+      // Save location button
+      document.getElementById('save-location-btn').addEventListener('click', function() {
+        var lat = document.getElementById('lat').value.trim();
+        var lon = document.getElementById('lon').value.trim();
+
+        if (!lat || !lon) {
+          alert('Please enter both latitude and longitude');
+          return;
+        }
+
+        var latNum = parseFloat(lat);
+        var lonNum = parseFloat(lon);
+
+        if (isNaN(latNum) || isNaN(lonNum)) {
+          alert('Please enter valid numbers');
+          return;
+        }
+
+        saveLocation(latNum, lonNum);
+        renderLocation();
+      });
+
+      // Clear location button
+      document.getElementById('clear-location-btn').addEventListener('click', function() {
+        clearLocation();
+        renderLocation();
+      });
+
+      // Initial render
+      renderLocation();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,222 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Georgia, serif;
+  font-size: 18px;
+  line-height: 1.4;
+  background: #fff;
+  color: #000;
+  padding: 12px;
+}
+
+#app {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Header */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #000;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+
+.header-left {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+}
+
+h1 {
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.weather {
+  font-size: 20px;
+  font-weight: normal;
+}
+
+.weather-temp {
+  font-weight: bold;
+}
+
+.weather-desc {
+  font-size: 16px;
+  color: #666;
+}
+
+/* Greeting */
+.greeting {
+  font-size: 22px;
+  font-style: italic;
+  text-align: center;
+  padding: 12px 0;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #ccc;
+}
+
+.settings-btn {
+  display: inline-block;
+  padding: 12px 16px;
+  font-size: 16px;
+  color: #000;
+  text-decoration: none;
+  border: 2px solid #000;
+}
+
+/* Stops */
+.stop {
+  margin-bottom: 24px;
+  border: 2px solid #000;
+  padding: 12px;
+}
+
+.stop-header {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #000;
+  padding-bottom: 8px;
+}
+
+.arrival {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 8px 0;
+  border-bottom: 1px solid #ccc;
+}
+
+.arrival:last-child {
+  border-bottom: none;
+}
+
+.route {
+  font-size: 24px;
+  font-weight: bold;
+  min-width: 60px;
+}
+
+.destination {
+  flex: 1;
+  font-size: 16px;
+  padding: 0 12px;
+  overflow: hidden;
+}
+
+.time {
+  font-size: 28px;
+  font-weight: bold;
+  text-align: right;
+  min-width: 80px;
+}
+
+.time-unit {
+  font-size: 14px;
+  font-weight: normal;
+}
+
+.no-arrivals {
+  font-style: italic;
+  color: #666;
+  padding: 8px 0;
+}
+
+.no-stops {
+  text-align: center;
+  padding: 40px 20px;
+  font-size: 20px;
+}
+
+.no-stops a {
+  color: #000;
+  font-weight: bold;
+}
+
+/* Footer */
+footer {
+  margin-top: 24px;
+  padding-top: 8px;
+  border-top: 1px solid #ccc;
+  font-size: 14px;
+  color: #666;
+  text-align: center;
+}
+
+/* Error state */
+.error {
+  color: #000;
+  background: #eee;
+  padding: 12px;
+  border: 2px solid #000;
+  margin-bottom: 16px;
+}
+
+/* Settings page styles */
+.settings-form {
+  margin-bottom: 24px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+input, select {
+  width: 100%;
+  padding: 12px;
+  font-size: 18px;
+  border: 2px solid #000;
+  background: #fff;
+}
+
+button {
+  padding: 14px 24px;
+  font-size: 18px;
+  background: #000;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  min-height: 48px;
+}
+
+.stop-list {
+  list-style: none;
+}
+
+.stop-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #000;
+  margin-bottom: 8px;
+}
+
+.stop-list .remove-btn {
+  background: #fff;
+  color: #000;
+  border: 2px solid #000;
+  padding: 8px 16px;
+  font-size: 16px;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 16px;
+  color: #000;
+  font-size: 18px;
+}
