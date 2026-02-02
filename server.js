@@ -190,6 +190,36 @@ app.get('/api/weather', function(req, res) {
     });
 });
 
+// Default config from environment (can be overridden by localStorage)
+app.get('/api/config', function(req, res) {
+  var config = {
+    stops: [],
+    location: null
+  };
+
+  // Parse DEFAULT_STOPS from env
+  if (process.env.DEFAULT_STOPS) {
+    try {
+      config.stops = JSON.parse(process.env.DEFAULT_STOPS);
+    } catch (e) {
+      console.error('Error parsing DEFAULT_STOPS:', e.message);
+    }
+  }
+
+  // Parse DEFAULT_LOCATION from env (format: "lat,lon")
+  if (process.env.DEFAULT_LOCATION) {
+    var parts = process.env.DEFAULT_LOCATION.split(',');
+    if (parts.length === 2) {
+      config.location = {
+        lat: parseFloat(parts[0].trim()),
+        lon: parseFloat(parts[1].trim())
+      };
+    }
+  }
+
+  res.json(config);
+});
+
 // List of supported agencies
 app.get('/api/agencies', function(req, res) {
   res.json([

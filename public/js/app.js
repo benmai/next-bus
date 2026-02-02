@@ -4,6 +4,9 @@
   var REFRESH_INTERVAL = 60000; // 60 seconds
   var MAX_ARRIVALS = 2;
 
+  // Server-provided defaults (loaded on init)
+  var serverConfig = { stops: [], location: null };
+
   var GREETINGS = [
     'Have a great day!',
     'You\'re doing great!',
@@ -36,24 +39,42 @@
     }
   }
 
-  // Get stops from localStorage
+  // Get stops from localStorage, falling back to server config
   function getStops() {
     try {
       var stored = localStorage.getItem('nextbus_stops');
-      return stored ? JSON.parse(stored) : [];
-    } catch (e) {
-      return [];
-    }
+      if (stored) {
+        var parsed = JSON.parse(stored);
+        if (parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return serverConfig.stops || [];
   }
 
-  // Get location from localStorage
+  // Get location from localStorage, falling back to server config
   function getLocation() {
     try {
       var stored = localStorage.getItem('nextbus_location');
-      return stored ? JSON.parse(stored) : null;
-    } catch (e) {
-      return null;
-    }
+      if (stored) return JSON.parse(stored);
+    } catch (e) {}
+    return serverConfig.location || null;
+  }
+
+  // Fetch server config (defaults from .env)
+  function fetchConfig(callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '/api/config', true);
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState === 4) {
+        if (xhr.status === 200) {
+          try {
+            serverConfig = JSON.parse(xhr.responseText);
+          } catch (e) {}
+        }
+        callback();
+      }
+    };
+    xhr.send();
   }
 
   // Fetch and display weather
@@ -236,10 +257,13 @@
   // Initialize
   function init() {
     showGreeting();
-    refreshAll();
-    refreshWeather();
-    setInterval(refreshAll, REFRESH_INTERVAL);
-    setInterval(refreshWeather, REFRESH_INTERVAL * 5); // Weather every 5 minutes
+    // Fetch server config first, then start refreshing
+    fetchConfig(function() {
+      refreshAll();
+      refreshWeather();
+      setInterval(refreshAll, REFRESH_INTERVAL);
+      setInterval(refreshWeather, REFRESH_INTERVAL * 5); // Weather every 5 minutes
+    });
   }
 
   // Start when DOM is ready
